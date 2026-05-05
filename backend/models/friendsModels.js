@@ -16,10 +16,10 @@ async function findAllFriendsByUserID(userId) {
 
 async function findPendingFriendsByUserID(userId) {
     const [rows] = await db.query(`
-        SELECT U.UserID, U.FullName, F.CreatedAt 
+        SELECT U.UserID, U.FullName, F.Status, F.CreatedAt 
         FROM FRIENDS F
-        JOIN USERS U ON F.UserID = U.UserID
-        WHERE F.FriendID = ? AND F.Status = 'PENDING'`,
+        JOIN USERS U ON F.FriendID = U.UserID
+        WHERE F.UserID = ? AND F.Status IN ('PENDING', 'REQUESTED')`,
         [userId]
     );
     return rows;

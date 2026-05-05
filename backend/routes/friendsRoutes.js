@@ -9,6 +9,6 @@ router.get('/:id/sent', findSentRequestsByUserID);
 router.post('/:id/add', addFriend);
 router.put('/:id/accept', acceptFriend);
 router.delete('/:id/remove', removeFriend);
-router.post('/:id/status', getFriendStatus);
+router.get('/:id/status', getFriendStatus);
 
 module.exports = router;
