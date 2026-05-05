@@ -7,7 +7,8 @@ const logger = require('morgan');
 const app = express();
 
 const userRoutes = require('./routes/usersRoutes');
-const postRoutes = require('./routes/postsRoutes')
+const postRoutes = require('./routes/postsRoutes');
+const friendRoutes = require('./routes/friendsRoutes');
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -17,7 +18,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
-
+app.use('/api/friends', friendRoutes);
 app.use(function(req, res, next) {
   next(createError(404));
 });

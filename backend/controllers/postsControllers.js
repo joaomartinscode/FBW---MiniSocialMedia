@@ -25,7 +25,7 @@ async function findPostsByUserID(req, res) {
 
         if (posts.length === 0) {
             return res.status(404).json({
-                message: 's'
+                message: 'No posts found for this user'
             })
         }
         return res.status(200).json(posts);
