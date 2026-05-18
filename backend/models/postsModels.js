@@ -1,55 +1,95 @@
-let db = require('../config/db')
+const { prisma } = require("../lib/prisma");
 
 async function findAllPosts() {
-    const [rows] = await db.query(`
-        SELECT PostID, UserID, Content, IsPublic, CreatedAt
-        FROM posts
-        ORDER BY CreatedAt DESC
-    `);
-    return rows;
+    return prisma.posts.findMany({
+        select: {
+            PostID: true,
+            UserID: true,
+            Content: true,
+            IsPublic: true,
+            CreatedAt: true
+        },
+        orderBy: {
+            CreatedAt: 'desc'
+        }
+    });
 }
 
 async function findPostsByUserId(id) {
-    const [rows] = await db.query(`
-        SELECT PostID, UserID, Content, IsPublic, CreatedAt 
-        FROM posts 
-        WHERE UserID = ?
-    `, [id]);
-
-    return rows[0] || null;
+    return prisma.posts.findMany({
+        where: {
+            UserID: parseInt(id)
+        },
+        select: {
+            PostID: true,
+            UserID: true,
+            Content: true,
+            IsPublic: true,
+            CreatedAt: true
+        },
+        orderBy: {
+            CreatedAt: 'desc'
+        }
+    });
 }
+
 async function findPostsById(id) {
-    const [rows] = await db.query(`
-        SELECT PostID, UserID, Content, IsPublic, CreatedAt 
-        FROM posts 
-        WHERE PostID = ?
-    `, [id]);
-
-    return rows[0] || null;
+    return prisma.posts.findUnique({
+        where: {
+            PostID: parseInt(id)
+        },
+        select: {
+            PostID: true,
+            UserID: true,
+            Content: true,
+            IsPublic: true,
+            CreatedAt: true
+        }
+    });
 }
 
-async function addPost(UserID, Content, isPublic) {
-    const [rows] = await db.query(
-        'INSERT INTO posts (UserID, Content, isPublic) VALUES (?, ?, ?)',
-        [UserID, Content, isPublic]
-    );
-    return await findPostsById(rows.insertId);
+async function addPost(UserID, Content, IsPublic) {
+    const post = await prisma.posts.create({
+        data: {
+            UserID: parseInt(UserID),
+            Content: Content,
+            IsPublic: IsPublic === true || IsPublic === 1 || IsPublic === 'true'
+        }
+    });
+
+    return findPostsById(post.PostID);
 }
 
-async function removePost(removedID){
-    const [rows] = await db.query('Delete from posts where PostID = ?', [removedID]);
-    return rows.affectedRows;
+async function removePost(postId, userId) {
+    try {
+        const result = await prisma.posts.deleteMany({
+            where: {
+                PostID: parseInt(postId),
+                UserID: parseInt(userId)
+            }
+        });
+        return result.count;
+    } catch (error) {
+        return 0;
+    }
 }
 
-async function editPost(editedPostID, newContent, newIsPublic){
-    const [rows] = await db.query(
-        'Update posts SET Content = ?, IsPublic = ? where PostID = ?',
-        [newContent, newIsPublic, editedPostID]
-    )
-    return rows.affectedRows;
+async function editPost(postId, userId, newContent, newIsPublic) {
+    try {
+        const result = await prisma.posts.updateMany({
+            where: {
+                PostID: parseInt(postId),
+                UserID: parseInt(userId)
+            },
+            data: {
+                Content: newContent,
+                IsPublic: newIsPublic === true || newIsPublic === 1 || newIsPublic === 'true'
+            }
+        });
+        return result.count;
+    } catch (error) {
+        return 0;
+    }
 }
 
-module.exports = {findAllPosts, findPostsByUserId, addPost, removePost, editPost}
-
-
-
+module.exports = { findAllPosts, findPostsByUserId, findPostsById, addPost, removePost, editPost };

@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model comments {
+  CommentID       Int        @id @default(autoincrement())
+  UserID          Int
+  PostID          Int?
+  ParentCommentID Int?
+  Content         String     @db.VarChar(200)
+  CreatedAt       DateTime?  @default(now()) @db.Timestamp(0)
+  users           users      @relation(fields: [UserID], references: [UserID], onDelete: Cascade, onUpdate: NoAction, map: "comments_ibfk_1")
+  posts           posts?     @relation(fields: [PostID], references: [PostID], onDelete: Cascade, onUpdate: NoAction, map: "comments_ibfk_2")
+  comments        comments?  @relation("commentsTocomments", fields: [ParentCommentID], references: [CommentID], onDelete: Cascade, onUpdate: NoAction, map: "comments_ibfk_3")
+  other_comments  comments[] @relation("commentsTocomments")
+  likes           likes[]
+
+  @@index([ParentCommentID], map: "ParentCommentID")
+  @@index([PostID], map: "PostID")
+  @@index([UserID], map: "UserID")
+}
+
+model friends {
+  UserID                        Int
+  FriendID                      Int
+  Status                        friends_Status? @default(PENDING)
+  CreatedAt                     DateTime?       @default(now()) @db.Timestamp(0)
+  users_friends_UserIDTousers   users           @relation("friends_UserIDTousers", fields: [UserID], references: [UserID], onDelete: Cascade, onUpdate: NoAction, map: "friends_ibfk_1")
+  users_friends_FriendIDTousers users           @relation("friends_FriendIDTousers", fields: [FriendID], references: [UserID], onDelete: Cascade, onUpdate: NoAction, map: "friends_ibfk_2")
+
+  @@id([UserID, FriendID])
+  @@index([FriendID], map: "FriendID")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model likes {
+  LikeID    Int       @id @default(autoincrement())
+  UserID    Int
+  PostID    Int?
+  CommentID Int?
+  CreatedAt DateTime? @default(now()) @db.Timestamp(0)
+  users     users     @relation(fields: [UserID], references: [UserID], onDelete: Cascade, onUpdate: NoAction, map: "likes_ibfk_1")
+  posts     posts?    @relation(fields: [PostID], references: [PostID], onDelete: Cascade, onUpdate: NoAction, map: "likes_ibfk_2")
+  comments  comments? @relation(fields: [CommentID], references: [CommentID], onDelete: Cascade, onUpdate: NoAction, map: "likes_ibfk_3")
+
+  @@unique([UserID, CommentID], map: "unique_user_comment_like")
+  @@unique([UserID, PostID], map: "unique_user_post_like")
+  @@index([CommentID], map: "CommentID")
+  @@index([PostID], map: "PostID")
+}
+
+model posts {
+  PostID    Int        @id @default(autoincrement())
+  UserID    Int
+  Content   String     @db.Text
+  IsPublic  Boolean?   @default(true)
+  CreatedAt DateTime?  @default(now()) @db.Timestamp(0)
+  comments  comments[]
+  likes     likes[]
+  users     users      @relation(fields: [UserID], references: [UserID], onDelete: Cascade, onUpdate: NoAction, map: "posts_ibfk_1")
+
+  @@index([UserID], map: "UserID")
+}
+
+model users {
+  UserID                          Int        @id @default(autoincrement())
+  FullName                        String     @db.VarChar(50)
+  Birthdate                       DateTime?  @db.Date
+  Email                           String     @unique(map: "Email") @db.VarChar(50)
+  Password                        String     @db.VarChar(255)
+  IsPublicProfile                 Boolean?   @default(true)
+  comments                        comments[]
+  friends_friends_UserIDTousers   friends[]  @relation("friends_UserIDTousers")
+  friends_friends_FriendIDTousers friends[]  @relation("friends_FriendIDTousers")
+  likes                           likes[]
+  posts                           posts[]
+}
+
+enum friends_Status {
+  REQUESTED
+  PENDING
+  ACCEPTED
+}

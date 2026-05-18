@@ -1,80 +1,135 @@
-let db = require('../config/db')
+const { prisma } = require('../lib/prisma');
+
+async function getFriendStatus(userId, targetId) {
+    const friendRelation = await prisma.friends.findUnique({
+        where: {
+            UserID_FriendID: {
+                UserID: parseInt(userId),
+                FriendID: parseInt(targetId)
+            }
+        },
+        select: {
+            Status: true
+        }
+    });
+
+    return friendRelation ? friendRelation.Status : 'NONE';
+}
 
 async function findAllFriendsByUserID(userId) {
-    const [rows] = await db.query(`
-        SELECT 
-            U.UserID AS FriendID, 
-            U.FullName AS FriendName, 
-            U.IsPublicProfile
-        FROM FRIENDS F
-        JOIN USERS U ON F.FriendID = U.UserID
-        WHERE F.UserID = ? AND F.Status = 'ACCEPTED'`,
-        [userId]
-    );
-    return rows;
+    const friends = await prisma.friends.findMany({
+        where: {
+            UserID: parseInt(userId),
+            Status: 'ACCEPTED'
+        },
+        include: {
+            users_friends_FriendIDTousers: {
+                select: {
+                    UserID: true,
+                    FullName: true,
+                    IsPublicProfile: true
+                }
+            }
+        }
+    });
+
+    return friends.map(f => ({
+        FriendID: f.users_friends_FriendIDTousers.UserID,
+        FriendName: f.users_friends_FriendIDTousers.FullName,
+        IsPublicProfile: f.users_friends_FriendIDTousers.IsPublicProfile
+    }));
 }
 
 async function findPendingFriendsByUserID(userId) {
-    const [rows] = await db.query(`
-        SELECT U.UserID, U.FullName, F.Status, F.CreatedAt 
-        FROM FRIENDS F
-        JOIN USERS U ON F.FriendID = U.UserID
-        WHERE F.UserID = ? AND F.Status IN ('PENDING', 'REQUESTED')`,
-        [userId]
-    );
-    return rows;
+    const pending = await prisma.friends.findMany({
+        where: {
+            UserID: parseInt(userId),
+            Status: 'PENDING'
+        },
+        include: {
+            users_friends_FriendIDTousers: {
+                select: {
+                    UserID: true,
+                    FullName: true,
+                    IsPublicProfile: true
+                }
+            }
+        }
+    });
+
+    return pending.map(f => ({
+        UserID: f.users_friends_FriendIDTousers.UserID,
+        FullName: f.users_friends_FriendIDTousers.FullName,
+        Status: f.Status,
+        CreatedAt: f.CreatedAt
+    }));
 }
 
 async function findSentRequestsByUserID(userId) {
-    const [rows] = await db.query(`
-        SELECT U.UserID AS FriendID, U.FullName, F.CreatedAt 
-        FROM FRIENDS F
-        JOIN USERS U ON F.FriendID = U.UserID
-        WHERE F.UserID = ? AND F.Status = 'REQUESTED'`,
-        [userId]
-    );
-    return rows;
-}
+    const sent = await prisma.friends.findMany({
+        where: {
+            UserID: parseInt(userId),
+            Status: 'REQUESTED'
+        },
+        include: {
+            users_friends_FriendIDTousers: {
+                select: {
+                    UserID: true,
+                    FullName: true
+                }
+            }
+        }
+    });
 
-async function getFriendStatus(userId, targetId) {
-    const [rows] = await db.query(`
-        SELECT Status FROM FRIENDS 
-        WHERE UserID = ? AND FriendID = ?
-    `, [userId, targetId]);
-
-    return rows.length > 0 ? rows[0].Status : 'NONE';
+    return sent.map(f => ({
+        FriendID: f.users_friends_FriendIDTousers.UserID,
+        FullName: f.users_friends_FriendIDTousers.FullName,
+        CreatedAt: f.CreatedAt
+    }));
 }
 
 async function addFriend(userIDSender, userIDReceiver) {
     const status = await getFriendStatus(userIDSender, userIDReceiver);
 
     if (status !== 'NONE') {
-        throw new Error("Error adding friend");
+        throw new Error("Relation already exists");
     }
 
-    await db.query(`INSERT INTO FRIENDS (UserID, FriendID, Status) VALUES (?, ?, 'REQUESTED')`, [userIDSender, userIDReceiver]);
-    await db.query(`INSERT INTO FRIENDS (UserID, FriendID, Status) VALUES (?, ?, 'PENDING')`, [userIDReceiver, userIDSender]);
+    await prisma.friends.createMany({
+        data: [
+            { UserID: parseInt(userIDSender), FriendID: parseInt(userIDReceiver), Status: 'REQUESTED' },
+            { UserID: parseInt(userIDReceiver), FriendID: parseInt(userIDSender), Status: 'PENDING' }
+        ]
+    });
 }
 
 async function removeFriend(userId1, userId2) {
-    const [result] = await db.query(`
-        DELETE FROM FRIENDS
-        WHERE (UserID = ? AND FriendID = ?)
-           OR (UserID = ? AND FriendID = ?)
-    `, [userId1, userId2, userId2, userId1]);
+    const result = await prisma.friends.deleteMany({
+        where: {
+            OR: [
+                { UserID: parseInt(userId1), FriendID: parseInt(userId2) },
+                { UserID: parseInt(userId2), FriendID: parseInt(userId1) }
+            ]
+        }
+    });
 
-    return result.affectedRows;
+    return result.count;
 }
 
 async function acceptFriend(userId, friendId) {
-    const [result] = await db.query(`
-        UPDATE FRIENDS 
-        SET Status = 'ACCEPTED' 
-        WHERE (UserID = ? AND FriendID = ? AND Status = 'PENDING') 
-           OR (UserID = ? AND FriendID = ? AND Status = 'REQUESTED')
-    `, [userId, friendId, friendId, userId]);
+    const result = await prisma.friends.updateMany({
+        where: {
+            OR: [
+                { UserID: parseInt(userId), FriendID: parseInt(friendId) },
+                { UserID: parseInt(friendId), FriendID: parseInt(userId) }
+            ]
+        },
+        data: {
+            Status: 'ACCEPTED'
+        }
+    });
 
-    return result.affectedRows;
+    return result.count;
 }
 
 module.exports = {
@@ -85,4 +140,4 @@ module.exports = {
     removeFriend,
     acceptFriend,
     addFriend
-}
+};

@@ -1,16 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const {findAllPosts, findPostsByUserID, removePost, editPost, addPost} = require('../controllers/postsControllers')
+const postsController = require('../controllers/postsControllers')
 
+const authMiddleware = require('../middlewares/authMiddleware')
 
-router.get('/', findAllPosts);
+router.use(authMiddleware)
 
-router.get('/:id', findPostsByUserID);
+router.get('/', postsController.findAllPosts);
 
-router.post('/', addPost);
+router.get('/user/:id', postsController.findPostsByUserID);
 
-router.put('/:id', editPost);
+router.post('/', postsController.addPost);
 
-router.delete('/:id', removePost);
+router.put('/:id', postsController.editPost);
+
+router.delete('/:id', postsController.removePost);
 
 module.exports = router;

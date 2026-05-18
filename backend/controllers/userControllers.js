@@ -1,11 +1,13 @@
 const userModel = require('../models/usersModels');
+const bcrypt = require('bcrypt');
+
+const isValidId = (id) => Number.isInteger(id) && id >= 1;
 
 async function findAllUsers(req, res) {
-    try{
+    try {
         const users = await userModel.findAllUsers();
-
         return res.status(200).json(users);
-    }catch (error) {
+    } catch (error) {
         console.error('findAllUsers error: ', error);
         return res.status(500).json({
             message: 'Error listing all users'
@@ -13,12 +15,12 @@ async function findAllUsers(req, res) {
     }
 }
 
-async function findUserByID(req, res){
-    try{
+async function findUserByID(req, res) {
+    try {
         const id = Number(req.params.id);
 
-        if(!Number.isInteger(id) || id < 1){
-            return res.status(400).json({ message: 'Invalid user ID'})
+        if (!isValidId(id)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
         }
 
         const user = await userModel.findUserByID(id);
@@ -26,22 +28,20 @@ async function findUserByID(req, res){
         if (!user) {
             return res.status(404).json({
                 message: 'User not found'
-            })
+            });
         }
 
         return res.status(200).json(user);
-    }catch(error){
-        console.error('findUserByID error: ', error)
+    } catch (error) {
+        console.error('findUserByID error: ', error);
         return res.status(500).json({
-           message: 'Error finding user'
+            message: 'Error finding user'
         });
     }
-
 }
 
-async function addUser(req, res){
-    try{
-
+async function addUser(req, res) {
+    try {
         const { FullName, Email, Password, Birthdate } = req.body;
 
         if (!FullName || !Email || !Password) {
@@ -50,64 +50,80 @@ async function addUser(req, res){
             });
         }
 
-        const user = await userModel.addUser(
-            FullName, Email, Password, Birthdate
-        );
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
-        return res.status(201).json(user);
+        const newUser = await userModel.addUser(FullName, Email, hashedPassword, Birthdate);
 
-    }catch(error){
-        console.error('addUser error: ', error)
+        return res.status(201).json(newUser);
+
+    } catch (error) {
+        console.error('addUser error: ', error);
         return res.status(500).json({
             message: 'Error adding user'
-        })
+        });
     }
 }
 
-async function removeUser(req, res){
-
-    try{
+async function removeUser(req, res) {
+    try {
         const id = Number(req.params.id);
-        if(!Number.isInteger(id) || id < 1){
-            return res.status(400).json({ message: 'Invalid user ID'})
-        }
-        const affectedRows = await userModel.removeUser(id);
+        const loggedInUserId = req.user.userId;
 
-        if(affectedRows !== 1){
+        if (!isValidId(id)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+
+        if (id !== loggedInUserId) {
+            return res.status(403).json({ message: 'Forbidden: You can only delete your own profile' });
+        }
+
+        const affectedRows = userModel.removeUser(id);
+
+        if (affectedRows !== 1) {
             return res.status(404).json({
                 message: 'User not found'
-            })
+            });
         }
         return res.status(200).json({
             message: 'User removed successfully'
-            });
+        });
 
-    }catch(error){
-        console.error('removeUser error: ', error)
+    } catch (error) {
+        console.error('removeUser error: ', error);
         return res.status(500).json({
             message: 'Error removing user'
         });
     }
-
 }
 
 async function editUser(req, res) {
     try {
         const id = Number(req.params.id);
+        const loggedInUserId = req.user.userId;
 
-        if (!Number.isInteger(id) || id < 1) {
+        if (!isValidId(id)) {
             return res.status(400).json({ message: 'Invalid user ID' });
         }
 
-        const { FullName, Birthdate, Email, Password, IsPublicProfile } = req.body;
+        if (id !== loggedInUserId) {
+            return res.status(403).json({ message: 'Forbidden: You can only edit your own profile' });
+        }
 
+        const { FullName, Birthdate, Email, Password, IsPublicProfile } = req.body;
         if (!FullName || !Email) {
             return res.status(400).json({
                 message: 'Missing arguments'
             });
         }
 
-        const affectedRows = await userModel.editUser(id, FullName, Birthdate, Email, Password, IsPublicProfile);
+        let passwordFinal = Password;
+        if (Password) {
+            const saltRounds = 10;
+            passwordFinal = await bcrypt.hash(Password, saltRounds);
+        }
+
+        const affectedRows = userModel.editUser(id, FullName, Birthdate, Email, passwordFinal, IsPublicProfile);
 
         if (affectedRows === 0) {
             return res.status(404).json({ message: 'User not found or no changes made' });
@@ -121,5 +137,4 @@ async function editUser(req, res) {
     }
 }
 
-module.exports = {findAllUsers, findUserByID, addUser, removeUser, editUser}
-
+module.exports = { findAllUsers, findUserByID, addUser, removeUser, editUser };

@@ -6,9 +6,12 @@ const logger = require('morgan');
 
 const app = express();
 
-const userRoutes = require('./routes/usersRoutes');
-const postRoutes = require('./routes/postsRoutes');
+const authRoutes = require('./routes/authRoutes');
+const commentsRoutes = require('./routes/commentsRoutes');
 const friendRoutes = require('./routes/friendsRoutes');
+const likesRoutes = require('./routes/likesRoutes');
+const postRoutes = require('./routes/postsRoutes');
+const userRoutes = require('./routes/usersRoutes');
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -16,9 +19,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/api/users', userRoutes);
-app.use('/api/posts', postRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/comments', commentsRoutes);
 app.use('/api/friends', friendRoutes);
+app.use('/api/likes', likesRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/users', userRoutes);
+
 app.use(function(req, res, next) {
   next(createError(404));
 });
