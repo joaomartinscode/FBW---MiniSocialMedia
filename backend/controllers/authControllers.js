@@ -45,7 +45,7 @@ const loginUser = async (req, res) => {
         const existingUser = await userModel.findUserByEmail(Email);
 
         if (!existingUser) {
-            return res.status(404).json({ message: 'Email not registered.' });
+            return res.status(404).json({ message: 'Email or password you entered is incorrect.' });
         }
 
         if (Password.length < 8 || Password.length > 20) {
@@ -57,7 +57,7 @@ const loginUser = async (req, res) => {
         const isPasswordValid = await bcrypt.compare(Password, existingUser.Password);
 
         if (!isPasswordValid) {
-            return res.status(401).json({ message: 'Invalid credentials.' });
+            return res.status(401).json({ message: 'Email or password you entered is incorrect.' });
         }
 
         const token = jwt.sign(
