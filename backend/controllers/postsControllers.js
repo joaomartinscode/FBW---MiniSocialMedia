@@ -1,14 +1,23 @@
 const postsModel = require('../models/postsModels');
+const friendsModel = require('../models/friendsModels');
 
 const isValidId = (id) => Number.isInteger(id) && id >= 1;
 
 async function findAllPosts(req, res) {
     try {
-        const posts = await postsModel.findAllPosts();
+        const userId = req.user.userId;
+        console.log(`[DEBUG] Controller findAllPosts for user: ${userId}`);
+
+        const friendIds = await friendsModel.findAllFriendIds(userId);
+
+        
+        const posts = await postsModel.findAllPosts(userId, friendIds);
+        console.log(`[DEBUG] Posts found: ${posts.length}`);
+
         return res.status(200).json(posts);
     } catch (error) {
-        console.error('findAllPosts error: ', error);
-        return res.status(500).json({ message: 'Error finding all posts' });
+        console.error('findAllPosts error:', error);
+        return res.status(500).json({ message: 'Erro interno ao buscar posts.' });
     }
 }
 

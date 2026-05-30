@@ -5,6 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 import './styles/Global.css'
 import './styles/Buttons.css'
+import './styles/Profile.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

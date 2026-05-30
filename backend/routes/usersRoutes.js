@@ -8,6 +8,8 @@ router.use(authMiddleware)
 
 router.get('/', usersController.findAllUsers);
 
+router.get('/suggestions', usersController.getSuggestions);
+
 router.get('/:id', usersController.findUserByID);
 
 router.post('/', usersController.addUser);

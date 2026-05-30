@@ -1,19 +1,20 @@
 const { prisma } = require('../lib/prisma');
 
 async function getFriendStatus(userId, targetId) {
-    const friendRelation = await prisma.friends.findUnique({
+    const relation = await prisma.friends.findFirst({
         where: {
-            UserID_FriendID: {
-                UserID: parseInt(userId),
-                FriendID: parseInt(targetId)
-            }
+            OR: [
+                { UserID: parseInt(userId), FriendID: parseInt(targetId) },
+                { UserID: parseInt(targetId), FriendID: parseInt(userId) }
+            ]
         },
         select: {
-            Status: true
+            Status: true,
+            UserID: true
         }
     });
 
-    return friendRelation ? friendRelation.Status : 'NONE';
+    return relation ? relation.Status : 'NONE';
 }
 
 async function findAllFriendsByUserID(userId) {
@@ -132,6 +133,21 @@ async function acceptFriend(userId, friendId) {
     return result.count;
 }
 
+async function findAllFriendIds(userId) {
+    const friends = await prisma.friends.findMany({
+        where: {
+            UserID: parseInt(userId),
+            Status: 'ACCEPTED'
+        },
+        select: {
+            FriendID: true
+        }
+    });
+
+    console.log(`[DEBUG] Friends IDs for user ${userId}:`, friends.map(f => f.FriendID));
+    return friends.map(f => f.FriendID);
+}
+
 module.exports = {
     findAllFriendsByUserID,
     findPendingFriendsByUserID,
@@ -139,5 +155,6 @@ module.exports = {
     getFriendStatus,
     removeFriend,
     acceptFriend,
-    addFriend
+    addFriend,
+    findAllFriendIds
 };

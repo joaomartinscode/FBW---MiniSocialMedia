@@ -7,8 +7,8 @@ async function toggleLike(req, res) {
         const { postId, commentId } = req.body;
         const userId = req.user.userId;
 
-        if ((postId && commentId) || (!postId && !commentId)) {
-            return res.status(400).json({ message: 'Must provide exactly one target: postId OR commentId' });
+        if (!postId && !commentId) {
+            return res.status(400).json({ message: 'Must provide a target: postId OR commentId' });
         }
 
         const targetId = postId || commentId;
@@ -29,22 +29,18 @@ async function getLikes(req, res) {
     try {
         const postId = req.query.postId ? Number(req.query.postId) : null;
         const commentId = req.query.commentId ? Number(req.query.commentId) : null;
+        const userId = req.user.userId; 
 
-        if ((postId && commentId) || (!postId && !commentId)) {
-             return res.status(400).json({ message: 'Must query by exactly one target' });
+        if (!postId && !commentId) {
+            return res.status(400).json({ message: 'Must query by at least one target' });
         }
 
-        const targetId = postId || commentId;
-        if (!isValidId(targetId)) {
-            return res.status(400).json({ message: 'Invalid target ID' });
-        }
-
-        const total = await likesModel.getLikesCount(postId, commentId);
-        return res.status(200).json({ totalLikes: total });
+        const result = await likesModel.getLikesCount(postId, commentId, userId);
+        return res.status(200).json(result); 
 
     } catch (error) {
         console.error('getLikes error: ', error);
-        return res.status(500).json({ message: 'Error fetching likes count' });
+        return res.status(500).json({ message: 'Error fetching likes' });
     }
 }
 

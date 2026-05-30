@@ -12,6 +12,35 @@ async function findAllUsers() {
     });
 }
 
+async function findSuggestions(userId) {
+    
+    const friends = await prisma.friends.findMany({
+        where: {
+            OR: [
+                { UserID: parseInt(userId), Status: 'ACCEPTED' },
+                { FriendID: parseInt(userId), Status: 'ACCEPTED' }
+            ]
+        }
+    });
+
+    const friendIds = friends.map((f) =>
+        f.UserID === parseInt(userId) ? f.FriendID : f.UserID
+    );
+
+    return prisma.users.findMany({
+        where: {
+            UserID: {
+                not: parseInt(userId),
+                notIn: friendIds
+            }
+        },
+        select: {
+            UserID: true,
+            FullName: true
+        }
+    });
+}
+
 async function findUserByID(id) {
     return (await prisma.users.findUnique({
         where: {
@@ -86,4 +115,4 @@ async function editUser(UserID, FullName, Birthdate, Email, Password, IsPublicPr
     }
 }
 
-module.exports = { findAllUsers, findUserByID, findUserByEmail, addUser, editUser, removeUser };
+module.exports = { findAllUsers,findSuggestions, findUserByID, findUserByEmail, addUser, editUser, removeUser };

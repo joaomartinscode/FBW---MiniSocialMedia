@@ -1,23 +1,32 @@
 const { prisma } = require('../lib/prisma');
 
 async function getCommentsByPostId(postId) {
+    
+    
     return prisma.comments.findMany({
         where: {
-            OR: [
-                { PostID: parseInt(postId) },
-                {
-                    comments: {
-                        PostID: parseInt(postId)
+            PostID: parseInt(postId),
+            ParentCommentID: null 
+        },
+        include: {
+            users: {
+                select: { FullName: true }
+            },
+            other_comments: { 
+                include: {
+                    users: { select: { FullName: true } },
+                    other_comments: {
+                        include: {
+                            users: { select: { FullName: true } },
+                            other_comments: {
+                                include: {
+                                    users: { select: { FullName: true } }
+                                }
+                            }
+                        }
                     }
                 }
-            ]
-        },
-        select: {
-            CommentID: true,
-            UserID: true,
-            ParentCommentID: true,
-            Content: true,
-            CreatedAt: true
+            }
         },
         orderBy: {
             CreatedAt: 'asc'
@@ -26,14 +35,28 @@ async function getCommentsByPostId(postId) {
 }
 
 async function addComment(userId, postId, parentCommentId, content) {
+    let finalPostId = null;
+    let finalParentId = null;
+
+    if (parentCommentId) {
+        
+        finalParentId = parseInt(parentCommentId);
+        finalPostId = null;
+    } else if (postId) {
+        
+        finalPostId = parseInt(postId);
+        finalParentId = null;
+    }
+
     const newComment = await prisma.comments.create({
         data: {
             UserID: parseInt(userId),
-            PostID: postId ? parseInt(postId) : null,
-            ParentCommentID: parentCommentId ? parseInt(parentCommentId) : null,
+            PostID: finalPostId,
+            ParentCommentID: finalParentId,
             Content: content
         }
     });
+
     return newComment.CommentID;
 }
 
@@ -44,7 +67,6 @@ async function removeComment(commentId, userId) {
             UserID: parseInt(userId)
         }
     });
-
     return result.count;
 }
 

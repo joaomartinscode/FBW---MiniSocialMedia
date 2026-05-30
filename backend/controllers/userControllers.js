@@ -15,6 +15,16 @@ async function findAllUsers(req, res) {
     }
 }
 
+async function getSuggestions(req, res) {
+    try {
+        const userId = req.user.userId;
+        const suggestions = await userModel.findSuggestions(userId);
+        return res.status(200).json(suggestions);
+    } catch (error) {
+        console.error('getSuggestions error: ', error);
+        return res.status(500).json({ message: 'Erro ao buscar sugestões' });
+    }
+}
 async function findUserByID(req, res) {
     try {
         const id = Number(req.params.id);
@@ -137,4 +147,4 @@ async function editUser(req, res) {
     }
 }
 
-module.exports = { findAllUsers, findUserByID, addUser, removeUser, editUser };
+module.exports = { findAllUsers, findUserByID, addUser, removeUser, editUser, getSuggestions };

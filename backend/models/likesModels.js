@@ -34,22 +34,30 @@ async function toggleLike(userId, postId, commentId) {
     }
 }
 
-async function getLikesCount(postId, commentId) {
-    if (postId) {
-        return prisma.likes.count({
+async function getLikesCount(postId, commentId, userId = null) {
+    const whereClause = {
+        PostID: postId ? parseInt(postId) : null,
+        CommentID: commentId ? parseInt(commentId) : null,
+    };
+
+    
+    const totalLikes = await prisma.likes.count({
+        where: whereClause
+    });
+
+    
+    let hasLiked = false;
+    if (userId) {
+        const record = await prisma.likes.findFirst({
             where: {
-                PostID: parseInt(postId)
+                ...whereClause,
+                UserID: parseInt(userId)
             }
         });
-    } else if (commentId) {
-        return prisma.likes.count({
-            where: {
-                CommentID: parseInt(commentId)
-            }
-        });
+        hasLiked = !!record;
     }
 
-    return 0;
+    return { totalLikes, hasLiked };
 }
 
 module.exports = { toggleLike, getLikesCount };

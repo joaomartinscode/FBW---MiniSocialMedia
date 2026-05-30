@@ -29,7 +29,7 @@ export default function Button({
     const content = (
         <>
             {icon && <i className={icon} aria-hidden="true"></i>}
-            {/* Se houver texto (children), damos uma margem à esquerda se houver um ícone antes */}
+            {}
             {children && <span className={icon ? "ms-2" : ""}>{children}</span>}
         </>
     );

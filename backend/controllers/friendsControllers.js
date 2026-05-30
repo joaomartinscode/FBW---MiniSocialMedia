@@ -74,7 +74,7 @@ async function getFriendStatus(req, res) {
 
 async function findAllFriendsByUserID(req, res) {
     try {
-        const userId = req.user.userId;
+        const userId = Number(req.params.id);
         const friends = await friendsModel.findAllFriendsByUserID(userId);
         return res.status(200).json(friends);
     } catch (error) {

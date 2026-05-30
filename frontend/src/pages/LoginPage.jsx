@@ -28,12 +28,17 @@ function LoginPage(){
                 localStorage.setItem('token', token);
             }
 
+            const userId = response.data.userId;
+            if (userId) {
+                localStorage.setItem('userId', userId);
+            }
+
             setSuccess(response.data.message || "Successful login");
             setEmail('');
             setPassword('');
 
             setTimeout(() => {
-                navigate('/register');
+                navigate(`/profile/${userId}`);
             }, 1500);
 
         } catch (err) {

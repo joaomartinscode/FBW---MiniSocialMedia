@@ -1,32 +1,45 @@
 const { prisma } = require("../lib/prisma");
 
-async function findAllPosts() {
+function findAllPosts(userId, friendIds) {
+    console.log('[DEBUG] Model findAllPosts called with:', { userId, friendIds });
     return prisma.posts.findMany({
-        select: {
-            PostID: true,
-            UserID: true,
-            Content: true,
-            IsPublic: true,
-            CreatedAt: true
+        where: {
+            OR: [
+                { IsPublic: true },
+                { IsPublic: { equals: null } },
+                { UserID: Number(userId) },
+                {
+                    AND: [
+                        { IsPublic: false },
+                        { UserID: { in: friendIds.map((id) => Number(id)) } }
+                    ]
+                }
+            ]
+        },
+        include: {
+            users: {
+                select: {
+                    FullName: true
+                }
+            }
         },
         orderBy: {
             CreatedAt: 'desc'
         }
     });
 }
-
 async function findPostsByUserId(id) {
     return prisma.posts.findMany({
         where: {
             UserID: parseInt(id)
         },
-        select: {
-            PostID: true,
-            UserID: true,
-            Content: true,
-            IsPublic: true,
-            CreatedAt: true
-        },
+        include: {
+            users: {
+                select: {
+                    FullName: true
+                }
+            }
+         },
         orderBy: {
             CreatedAt: 'desc'
         }
@@ -54,10 +67,17 @@ async function addPost(UserID, Content, IsPublic) {
             UserID: parseInt(UserID),
             Content: Content,
             IsPublic: IsPublic === true || IsPublic === 1 || IsPublic === 'true'
+        },
+        include: {
+            users: {
+                select: {
+                    FullName: true
+                }
+            }
         }
     });
 
-    return findPostsById(post.PostID);
+    return post;
 }
 
 async function removePost(postId, userId) {
