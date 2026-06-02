@@ -62,7 +62,7 @@ async function findPostsById(id) {
 }
 
 async function addPost(UserID, Content, IsPublic) {
-    const post = await prisma.posts.create({
+    return prisma.posts.create({
         data: {
             UserID: parseInt(UserID),
             Content: Content,
@@ -76,8 +76,6 @@ async function addPost(UserID, Content, IsPublic) {
             }
         }
     });
-
-    return post;
 }
 
 async function removePost(postId, userId) {

@@ -1,4 +1,5 @@
 const friendsModel = require('../models/friendsModels');
+const userModel = require('../models/usersModels');
 
 const isValidId = (id) => Number.isInteger(id) && id >= 1;
 
@@ -8,17 +9,17 @@ async function addFriend(req, res) {
         const friendId = Number(req.params.friendId);
 
         if (!isValidId(friendId)) {
-            return res.status(400).json({ message: 'ID de amigo inválido' });
+            return res.status(400).json({ message: 'Invalid friend ID' });
         }
         if (userId === friendId) {
-            return res.status(400).json({ message: 'Não podes adicionar-te a ti próprio' });
+            return res.status(400).json({ message: 'You cannot add yourself as a friend' });
         }
 
         await friendsModel.addFriend(userId, friendId);
-        return res.status(201).json({ message: 'Pedido de amizade enviado' });
+        return res.status(201).json({ message: 'Friend request sent' });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: 'Erro ao adicionar amigo' });
+        return res.status(500).json({ message: 'Error sending friend request' });
     }
 }
 
@@ -27,16 +28,16 @@ async function acceptFriend(req, res) {
         const userId = req.user.userId;
         const friendId = Number(req.params.friendId);
 
-        if (!isValidId(friendId)) return res.status(400).json({ message: 'ID de amigo inválido' });
+        if (!isValidId(friendId)) return res.status(400).json({ message: 'Invalid friend ID' });
 
         const affectedRows = await friendsModel.acceptFriend(userId, friendId);
         if (affectedRows < 2) {
-            return res.status(404).json({ message: 'Pedido não encontrado ou já aceite' });
+            return res.status(404).json({ message: 'Request not found or already accepted' });
         }
 
-        return res.status(200).json({ message: 'Amizade aceite' });
+        return res.status(200).json({ message: 'Friend request accepted' });
     } catch (error) {
-        return res.status(500).json({ message: 'Erro ao aceitar amizade' });
+        return res.status(500).json({ message: 'Error accepting friend request' });
     }
 }
 
@@ -45,16 +46,16 @@ async function removeFriend(req, res) {
         const userId = req.user.userId;
         const friendId = Number(req.params.friendId);
 
-        if (!isValidId(friendId)) return res.status(400).json({ message: 'ID de amigo inválido' });
+        if (!isValidId(friendId)) return res.status(400).json({ message: 'Invalid friend ID' });
 
         const affectedRows = await friendsModel.removeFriend(userId, friendId);
         if (affectedRows < 2) {
-            return res.status(404).json({ message: 'Relação não encontrada' });
+            return res.status(404).json({ message: 'Relationship not found' });
         }
 
-        return res.status(200).json({ message: 'Amigo removido' });
+        return res.status(200).json({ message: 'Friend removed' });
     } catch (error) {
-        return res.status(500).json({ message: 'Erro ao remover amigo' });
+        return res.status(500).json({ message: 'Error removing friend' });
     }
 }
 
@@ -63,22 +64,36 @@ async function getFriendStatus(req, res) {
         const userId = req.user.userId;
         const friendId = Number(req.params.friendId);
 
-        if (!isValidId(friendId)) return res.status(400).json({ message: 'ID de amigo inválido' });
+        if (!isValidId(friendId)) return res.status(400).json({ message: 'Invalid friend ID' });
 
         const status = await friendsModel.getFriendStatus(userId, friendId);
         return res.status(200).json({ status });
     } catch (error) {
-        return res.status(500).json({ message: 'Erro ao verificar status' });
+        return res.status(500).json({ message: 'Error checking friend status' });
     }
 }
 
 async function findAllFriendsByUserID(req, res) {
     try {
         const userId = Number(req.params.id);
+        const loggedInUserId = req.user.userId;
+        
+        if (!isValidId(userId)) return res.status(400).json({ message: 'Invalid user ID' });
+        
+        const user = await userModel.findUserByID(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (userId !== loggedInUserId && !user.IsPublicProfile) {
+            const friendStatus = await friendsModel.getFriendStatus(loggedInUserId, userId);
+            if (friendStatus !== 'ACCEPTED') {
+                return res.status(200).json([]);
+            }
+        }
+
         const friends = await friendsModel.findAllFriendsByUserID(userId);
         return res.status(200).json(friends);
     } catch (error) {
-        return res.status(500).json({ message: 'Erro ao listar amigos' });
+        return res.status(500).json({ message: 'Error listing friends' });
     }
 }
 
@@ -88,7 +103,7 @@ async function findPendingFriendsByUserID(req, res) {
         const pending = await friendsModel.findPendingFriendsByUserID(userId);
         return res.status(200).json(pending);
     } catch (error) {
-        return res.status(500).json({ message: 'Erro ao listar pedidos pendentes' });
+        return res.status(500).json({ message: 'Error listing pending requests' });
     }
 }
 
@@ -98,7 +113,7 @@ async function findSentRequestsByUserID(req, res) {
         const sent = await friendsModel.findSentRequestsByUserID(userId);
         return res.status(200).json(sent);
     } catch (error) {
-        return res.status(500).json({ message: 'Erro ao listar pedidos enviados' });
+        return res.status(500).json({ message: 'Error listing sent requests' });
     }
 }
 

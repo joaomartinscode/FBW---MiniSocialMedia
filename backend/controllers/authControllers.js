@@ -2,14 +2,24 @@ const userModel = require('../models/usersModels');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET_KEY = 'um_dev_sql_entra_num_bar_vai_a_duas_tabelas_e_pergunta_posso_fazer_um_JOIN_200_OK_ELSE_ERROR_404';
-
 const registerUser = async (req, res) => {
     try {
         const { FullName, Email, Password, Birthdate } = req.body;
 
-        if (!FullName || !Email || !Password) {
+        if (!FullName || !Email || !Password || !Birthdate) {
             return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        const birthDate = new Date(Birthdate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        if (age < 18) {
+            return res.status(400).json({ message: 'You must be at least 18 years old to register.' });
         }
 
         const existingUser = await userModel.findUserByEmail(Email);
@@ -62,14 +72,15 @@ const loginUser = async (req, res) => {
 
         const token = jwt.sign(
             { userId: existingUser.UserID },
-            JWT_SECRET_KEY,
+            process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
 
         return res.status(200).json({
             message: 'Login successful!',
             token: token,
-            userId: existingUser.UserID
+            userId: existingUser.UserID,
+            fullName: existingUser.FullName
         });
 
     } catch (error) {

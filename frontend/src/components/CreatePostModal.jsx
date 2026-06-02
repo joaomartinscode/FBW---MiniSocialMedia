@@ -1,27 +1,25 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Button from './ui/Button.jsx';
-import { DEFAULT_AVATAR } from '../constants.js';
+import { DEFAULT_AVATAR } from '../lib/constants.js';
+import { authHeaders, getStoredUserId } from '../lib/auth.js';
 
 export default function CreatePostModal({ show, onClose, onPostCreated }) {
     const [content, setContent] = useState('');
     const [isPublic, setIsPublic] = useState(1);
-    const [userName, setUserName] = useState('');
+    const [userName, setUserName] = useState(localStorage.getItem('userFullName') || '');
 
-    const userId = localStorage.getItem('userId');
+    const userId = getStoredUserId();
 
     useEffect(() => {
         if (!show || !userId) return;
 
         const fetchUser = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const response = await axios.get(`http://localhost:3000/api/users/${userId}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setUserName(response.data.FullName || 'Utilizador');
+                const response = await axios.get(`http://localhost:3000/api/users/${userId}`, authHeaders());
+                setUserName(response.data.FullName || 'User');
             } catch (err) {
-                console.error('Erro ao carregar utilizador:', err);
+                console.error('Error loading user:', err);
             }
         };
 
@@ -35,17 +33,13 @@ export default function CreatePostModal({ show, onClose, onPostCreated }) {
         if (!content.trim()) return;
 
         try {
-            const token = localStorage.getItem('token');
-
             const payload = {
                 Content: content.trim(),
                 IsPublic: Number(isPublic)
             };
 
             const response = await axios.post('http://localhost:3000/api/posts', payload, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                ...authHeaders()
             });
 
             
@@ -55,13 +49,13 @@ export default function CreatePostModal({ show, onClose, onPostCreated }) {
             setIsPublic(1);
             onClose();
         } catch (err) {
-            console.error('Erro ao criar publicação:', err);
+            console.error('Error creating post:', err);
 
             const status = err?.response?.status;
             if (status === 401) {
-                alert('Erro 401: Não estás autenticado ou o token expirou.');
+                alert('Error 401: You are not authenticated or your token has expired.');
             } else {
-                alert('Não foi possível criar a publicação. Tenta novamente.');
+                alert('Could not create the post. Please try again.');
             }
         }
     };
@@ -71,7 +65,7 @@ export default function CreatePostModal({ show, onClose, onPostCreated }) {
             <div className="modal-dialog modal-dialog-centered">
                 <div className="modal-content border-0 rounded-4 shadow">
                         <div className="modal-header border-0 pb-0">
-                            <h5 className="modal-title fw-bold text-dark fs-5">Criar Publicação</h5>
+                            <h5 className="modal-title fw-bold text-dark fs-5">Create Post</h5>
                             <button type="button" className="btn-close" onClick={onClose}></button>
                         </div>
 
@@ -84,14 +78,14 @@ export default function CreatePostModal({ show, onClose, onPostCreated }) {
                                     className="rounded-circle" 
                                     style={{ width: '40px', height: '40px', objectFit: 'cover' }} 
                                 />
-                                <span className="fw-semibold">{userName || 'Carregando...'}</span>
+                                <span className="fw-semibold">{userName}</span>
                             </div>
 
                             <textarea
                                 className="form-control border-0 px-2 animate-focus-none"
                                 rows="4"
                                 style={{ resize: 'none', fontSize: '1.1rem', boxShadow: 'none' }}
-                                placeholder="No que estás a pensar?"
+                                placeholder="What's on your mind?"
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 required
@@ -105,8 +99,8 @@ export default function CreatePostModal({ show, onClose, onPostCreated }) {
                                     value={isPublic}
                                     onChange={(e) => setIsPublic(Number(e.target.value))}
                                 >
-                                    <option value={1}>Público</option>
-                                    <option value={0}>Privado</option>
+                                    <option value={1}>Public</option>
+                                    <option value={0}>Private</option>
                                 </select>
                             </div>
 
@@ -117,7 +111,7 @@ export default function CreatePostModal({ show, onClose, onPostCreated }) {
                                     className="w-100 rounded-pill text-white fw-bold py-2"
                                     disabled={!content.trim()}
                                 >
-                                    Publicar
+                                    Post
                                 </Button>
                             </div>
                         </div>

@@ -1,28 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { DEFAULT_AVATAR } from '../constants.js';
+import { DEFAULT_AVATAR } from '../lib/constants.js';
+import { authHeaders } from '../lib/auth.js';
 
 export default function SidebarFriends({ currentUserId }) {
-    const [friends, setFriends] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [friends, setFriends] = useState(null);
 
     useEffect(() => {
         if (!currentUserId) return;
 
         const fetchFriends = async () => {
             try {
-                const token = localStorage.getItem('token');
                 const response = await axios.get(
                     `http://localhost:3000/api/friends/${currentUserId}`,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    authHeaders()
                 );
                 setFriends(Array.isArray(response.data) ? response.data : []);
             } catch (err) {
                 console.error("Erro ao carregar lista de amigos:", err);
                 setFriends([]);
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -31,16 +28,10 @@ export default function SidebarFriends({ currentUserId }) {
 
     return (
         <aside className="p-3 h-100 friends-sidebar">
-            <h3 className="fw-bold text-dark fs-6 mb-4 px-2">Amigos</h3>
+            <h3 className="fw-bold text-dark fs-6 mb-4 px-2">Friends</h3>
 
-            {loading ? (
-                <div className="px-1 py-2 text-center">
-                    <div className="spinner-border spinner-border-sm text-primary" role="status">
-                        <span className="visually-hidden">Carregando...</span>
-                    </div>
-                </div>
-            ) : friends.length === 0 ? (
-                <p className="text-muted small">Ainda não tens amigos.</p>
+            {friends === null ? null : friends.length === 0 ? (
+                <p className="text-muted small">You do not have any friends yet.</p>
             ) : (
                 <ul className="list-unstyled d-flex flex-column gap-3">
                     {friends.map((friend) => (
@@ -55,7 +46,7 @@ export default function SidebarFriends({ currentUserId }) {
                                 to={`/profile/${friend.FriendID}`}
                                 className="fw-medium text-dark text-truncate text-decoration-none small"
                             >
-                                {friend.FriendName ?? "Utilizador Desconhecido"}
+                                {friend.FriendName ?? 'Unknown User'}
                             </Link>
                         </li>
                     ))}

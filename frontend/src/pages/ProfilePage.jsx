@@ -8,6 +8,8 @@ import CreatePostModal from '../components/CreatePostModal.jsx';
 import EditProfileModal from '../components/EditProfileModal.jsx';
 import PostCard from '../components/PostCard.jsx';
 import SidebarFriends from '../components/SidebarFriends.jsx';
+import Footer from '../components/Footer.jsx';
+import { authHeaders, getStoredUserId } from '../lib/auth.js';
 
 export default function ProfilePage() {
     const { id } = useParams();
@@ -17,18 +19,9 @@ export default function ProfilePage() {
     const [showEditProfileModal, setShowEditProfileModal] = useState(false);
     const [friendStatus, setFriendStatus] = useState('NONE');
 
-    const loggedInUserId = Number(localStorage.getItem('userId'));
+    const loggedInUserId = getStoredUserId();
     const currentProfileId = Number(id || loggedInUserId);
     const isOwnProfile = Number(currentProfileId) === Number(loggedInUserId);
-
-    const getAuthHeaders = () => {
-        const token = localStorage.getItem('token');
-        return {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        };
-    };
 
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -38,35 +31,42 @@ export default function ProfilePage() {
                 setFriendStatus('NONE');
 
                 if (!currentProfileId) {
-                    console.log("[DEBUG] No currentProfileId, skipping fetch");
+                    console.log('[DEBUG] No currentProfileId, skipping fetch');
                     return;
                 }
 
                 console.log(`[DEBUG] Fetching profile data for ID: ${currentProfileId}, isOwnProfile: ${isOwnProfile}`);
 
-                const fetchPromises = [
-                    axios.get(`http://localhost:3000/api/users/${currentProfileId}`, getAuthHeaders()),
-                    axios.get(`http://localhost:3000/api/posts/user/${currentProfileId}`, getAuthHeaders())
-                ];
+                const userResponse = await axios.get(`http://localhost:3000/api/users/${currentProfileId}`, authHeaders());
+                setUser(userResponse.data);
 
-                if (!isOwnProfile) {
-                    fetchPromises.push(
-                        axios.get(`http://localhost:3000/api/friends/${loggedInUserId}/status/${currentProfileId}`, getAuthHeaders())
-                    );
+                try {
+                    const postsResponse = await axios.get(`http://localhost:3000/api/posts/user/${currentProfileId}`, authHeaders());
+                    setPosts(Array.isArray(postsResponse.data) ? postsResponse.data : []);
+                } catch (postsError) {
+                    if (postsError?.response?.status === 404) {
+                        setPosts([]);
+                    } else {
+                        console.error('Error loading profile posts:', postsError);
+                        setPosts([]);
+                    }
                 }
 
-                const results = await Promise.all(fetchPromises);
-                console.log("[DEBUG] Fetch results:", results.map(r => r.status));
-
-                setUser(results[0].data);
-                setPosts(Array.isArray(results[1].data) ? results[1].data : []);
-
-                if (!isOwnProfile && results[2]) {
-                    setFriendStatus(results[2].data.status);
+                if (!isOwnProfile) {
+                    try {
+                        const friendResponse = await axios.get(
+                            `http://localhost:3000/api/friends/${loggedInUserId}/status/${currentProfileId}`,
+                            authHeaders()
+                        );
+                        setFriendStatus(friendResponse.data.status);
+                    } catch (friendError) {
+                        console.error('Error loading friend status:', friendError);
+                        setFriendStatus('NONE');
+                    }
                 }
 
             } catch (err) {
-                console.error('Erro ao carregar perfil/posts:', err);
+                console.error('Error loading profile/posts:', err);
                 setUser(null);
                 setPosts([]);
                 setFriendStatus('NONE');
@@ -79,18 +79,18 @@ export default function ProfilePage() {
     const handleToggleFriend = async () => {
         try {
             if (friendStatus === 'ACCEPTED' || friendStatus === 'REQUESTED') {
-                await axios.delete(`http://localhost:3000/api/friends/${loggedInUserId}/remove/${currentProfileId}`, getAuthHeaders());
+                await axios.delete(`http://localhost:3000/api/friends/${loggedInUserId}/remove/${currentProfileId}`, authHeaders());
                 setFriendStatus('NONE');
             } else if (friendStatus === 'PENDING') {
-                await axios.put(`http://localhost:3000/api/friends/${loggedInUserId}/accept/${currentProfileId}`, {}, getAuthHeaders());
+                await axios.put(`http://localhost:3000/api/friends/${loggedInUserId}/accept/${currentProfileId}`, {}, authHeaders());
                 setFriendStatus('ACCEPTED');
             } else if (friendStatus === 'NONE') {
-                await axios.post(`http://localhost:3000/api/friends/${loggedInUserId}/add/${currentProfileId}`, {}, getAuthHeaders());
+                await axios.post(`http://localhost:3000/api/friends/${loggedInUserId}/add/${currentProfileId}`, {}, authHeaders());
                 setFriendStatus('REQUESTED');
             }
         } catch (error) {
-            console.error("Erro ao alterar estado de amizade:", error);
-            alert("Não foi possível processar o pedido de amizade.");
+            console.error('Error updating friendship status:', error);
+            alert('Could not process the friend request.');
         }
     };
 
@@ -118,44 +118,52 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="min-vh-100 bg-white">
+        <div className="d-flex flex-column min-vh-100 bg-white">
             <Navbar onNewPostClick={() => setShowCreateModal(true)} />
 
-            <ProfileHeader
-                user={user}
-                isOwnProfile={isOwnProfile}
-                friendStatus={friendStatus}
-                onEditProfile={() => setShowEditProfileModal(true)}
-                onToggleFriend={handleToggleFriend}
-            />
+            <main className="flex-grow-1">
+                <ProfileHeader
+                    user={user}
+                    isOwnProfile={isOwnProfile}
+                    friendStatus={friendStatus}
+                    onEditProfile={() => setShowEditProfileModal(true)}
+                    onToggleFriend={handleToggleFriend}
+                />
 
-            <div className="container-fluid px-0">
-                <div className="row g-0">
-                    <div className="col-12 col-lg-9">
-                        <div className="px-5 py-4">
-                            {posts.length === 0 ? (
-                                <p className="text-muted">Ainda não existem posts para mostrar.</p>
-                            ) : (
-                                posts.map((post) => (
-                                    <PostCard
-                                        key={post.PostID}
-                                        post={post}
-                                        currentUserId={loggedInUserId}
-                                        onPostDeleted={handlePostDeleted}
-                                        onPostUpdated={handlePostUpdated}
-                                    />
-                                ))
-                            )}
+                <div className="container-fluid px-0">
+                    {user?.isPrivateAndNotFriend ? (
+                        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+                            <h4 className="text-muted">This profile is private</h4>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="row g-0">
+                            <div className="col-12 col-lg-9">
+                                <div className="px-5 py-4">
+                                    {posts.length === 0 ? (
+                                        <p className="text-muted text-center mt-5">No posts to show yet.</p>
+                                    ) : (
+                                        posts.map((post) => (
+                                            <PostCard
+                                                key={post.PostID}
+                                                post={post}
+                                                currentUserId={loggedInUserId}
+                                                onPostDeleted={handlePostDeleted}
+                                                onPostUpdated={handlePostUpdated}
+                                            />
+                                        ))
+                                    )}
+                                </div>
+                            </div>
 
-                    <div className="col-12 col-lg-3">
-                        <div className="p-4">
-                            <SidebarFriends currentUserId={currentProfileId} />
+                            <div className="col-12 col-lg-3">
+                                <div className="p-4">
+                                    <SidebarFriends currentUserId={currentProfileId} />
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
-            </div>
+            </main>
 
             {isOwnProfile && (
                 <>
@@ -164,14 +172,17 @@ export default function ProfilePage() {
                         onClose={() => setShowCreateModal(false)}
                         onPostCreated={handlePostCreated}
                     />
-                    <EditProfileModal
-                        show={showEditProfileModal}
-                        onClose={() => setShowEditProfileModal(false)}
-                        user={user}
-                        onProfileUpdated={handleProfileUpdated}
-                    />
+                    {showEditProfileModal && (
+                        <EditProfileModal
+                            show={showEditProfileModal}
+                            onClose={() => setShowEditProfileModal(false)}
+                            user={user}
+                            onProfileUpdated={handleProfileUpdated}
+                        />
+                    )}
                 </>
             )}
+            <Footer />
         </div>
     );
 }

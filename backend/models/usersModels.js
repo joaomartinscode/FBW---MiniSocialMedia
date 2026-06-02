@@ -97,20 +97,26 @@ async function removeUser(removedID) {
 
 async function editUser(UserID, FullName, Birthdate, Email, Password, IsPublicProfile) {
     try {
-        await prisma.users.update({
+        const dataToUpdate = {};
+        if (FullName !== undefined) dataToUpdate.FullName = FullName;
+        if (Birthdate !== undefined) dataToUpdate.Birthdate = Birthdate ? new Date(Birthdate) : null;
+        if (Email !== undefined) dataToUpdate.Email = Email;
+        if (Password !== undefined) dataToUpdate.Password = Password;
+        if (IsPublicProfile !== undefined) dataToUpdate.IsPublicProfile = IsPublicProfile === true || IsPublicProfile === 1 || IsPublicProfile === 'true';
+
+        if (Object.keys(dataToUpdate).length === 0) {
+            return 0;
+        }
+
+        const result = await prisma.users.update({
             where: {
                 UserID: parseInt(UserID)
             },
-            data: {
-                FullName: FullName,
-                Birthdate: Birthdate ? new Date(Birthdate) : undefined,
-                Email: Email,
-                Password: Password,
-                IsPublicProfile: IsPublicProfile === true || IsPublicProfile === 1 || IsPublicProfile === 'true'
-            }
+            data: dataToUpdate
         });
-        return 1;
+        return result ? 1 : 0;
     } catch (error) {
+        console.error('editUser model error:', error);
         return 0;
     }
 }

@@ -1,41 +1,45 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import CommentItem from './CommentItem.jsx';
+import { authHeaders } from '../lib/auth.js';
 
 export default function CommentSection({ postId }) {
     const [commentsTree, setCommentsTree] = useState([]);
     const [newCommentText, setNewCommentText] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
 
-    const token = localStorage.getItem('token');
-    const userFullName = localStorage.getItem('userFullName') || "Eu";
-    const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
-
-    const fetchComments = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            const res = await axios.get(`http://localhost:3000/api/comments/post/${postId}`, authHeaders);
-            setCommentsTree(res.data);
-        } catch (err) {
-            console.error("Erro ao carregar comentários:", err);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [postId]);
+    const userFullName = localStorage.getItem('userFullName') || 'Me';
 
     useEffect(() => {
-        fetchComments();
-    }, [fetchComments]);
+        const loadComments = async () => {
+            try {
+                const res = await axios.get(
+                    `http://localhost:3000/api/comments/post/${postId}`,
+                    authHeaders()
+                );
+                setCommentsTree(res.data);
+            } catch (err) {
+                console.error('Error loading comments:', err);
+            }
+        };
+
+        if (postId) {
+            loadComments();
+        }
+    }, [postId]);
 
     const handleAddMainComment = async (e) => {
         e.preventDefault();
         if (!newCommentText.trim()) return;
 
         try {
-            const res = await axios.post('http://localhost:3000/api/comments', {
-                postId: Number(postId),
-                content: newCommentText
-            }, authHeaders);
+            const res = await axios.post(
+                'http://localhost:3000/api/comments',
+                {
+                    postId: Number(postId),
+                    content: newCommentText
+                },
+                authHeaders()
+            );
 
             const newObj = {
                 CommentID: res.data.commentId,
@@ -49,7 +53,7 @@ export default function CommentSection({ postId }) {
             setCommentsTree(prev => [newObj, ...prev]);
             setNewCommentText('');
         } catch (err) {
-            console.error("Erro ao publicar comentários:", err);
+            console.error('Error posting comment:', err);
         }
     };
 
@@ -61,7 +65,7 @@ export default function CommentSection({ postId }) {
                     <input
                         type="text"
                         className="form-control form-control-sm rounded-pill bg-light border-0 px-3"
-                        placeholder="Escreve um comentário..."
+                        placeholder="Write a comment..."
                         value={newCommentText}
                         onChange={(e) => setNewCommentText(e.target.value)}
                     />
@@ -69,19 +73,30 @@ export default function CommentSection({ postId }) {
             </form>
 
             <div className="d-flex flex-column gap-3">
-                {isLoading ? (
-                    <div className="text-center small text-muted">A carregar...</div>
-                ) : commentsTree.length > 0 ? (
+                {commentsTree.length > 0 ? (
                     commentsTree.map(comment => (
                         <CommentItem
                             key={comment.CommentID}
                             comment={comment}
                             postId={postId}
-                            refreshComments={fetchComments}
+                            refreshComments={() => {
+                                const loadComments = async () => {
+                                    try {
+                                        const res = await axios.get(
+                                            `http://localhost:3000/api/comments/post/${postId}`,
+                                            authHeaders()
+                                        );
+                                        setCommentsTree(res.data);
+                                    } catch (err) {
+                                        console.error('Error loading comments:', err);
+                                    }
+                                };
+                                loadComments();
+                            }}
                         />
                     ))
                 ) : (
-                    <div className="ps-2 small text-muted">Sê o primeiro a comentar!</div>
+                    <div className="ps-2 small text-muted">Be the first to comment!</div>
                 )}
             </div>
         </div>

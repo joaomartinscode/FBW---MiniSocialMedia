@@ -42,7 +42,7 @@ async function addComment(req, res) {
 
 async function removeComment(req, res) {
     try {
-        const commentId = Number(req.params.id);
+        const commentId = Number(req.params.commentId);
         const userId = req.user.userId;
         const affectedRows = await commentsModel.removeComment(commentId, userId);
         if (affectedRows === 0) return res.status(403).json({ message: 'Denied' });

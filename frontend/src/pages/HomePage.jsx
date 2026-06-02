@@ -5,31 +5,21 @@ import PostCard from '../components/PostCard.jsx';
 import CreatePostModal from '../components/CreatePostModal.jsx';
 import SidebarSuggestions from '../components/SidebarSuggestions.jsx';
 import SidebarFriends from '../components/SidebarFriends.jsx';
+import Footer from '../components/Footer.jsx';
+import { authHeaders, getStoredUserId } from '../lib/auth.js';
 
 export default function HomePage() {
     const [posts, setPosts] = useState([]);
-    const [suggestions, setSuggestions] = useState([]);
-    const [sentRequests, setSentRequests] = useState([]); 
+    const [suggestions, setSuggestions] = useState(null);
+    const [sentRequests, setSentRequests] = useState(null); 
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [loadingSuggestions, setLoadingSuggestions] = useState(true);
 
-    const loggedInUserId = Number(localStorage.getItem('userId'));
-
-    const getAuthHeaders = () => {
-        const token = localStorage.getItem('token');
-        return {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        };
-    };
+    const loggedInUserId = getStoredUserId();
 
     useEffect(() => {
         const fetchHomeData = async () => {
-            setLoadingSuggestions(true);
-            
             try {
-                const postsResponse = await axios.get('http://localhost:3000/api/posts', getAuthHeaders());
+                const postsResponse = await axios.get('http://localhost:3000/api/posts', authHeaders());
                 console.log('Posts recebidos:', postsResponse.data);
                 setPosts(Array.isArray(postsResponse.data) ? postsResponse.data : []);
             } catch (err) {
@@ -40,8 +30,8 @@ export default function HomePage() {
             
             try {
                 const [suggestionsResponse, sentResponse] = await Promise.all([
-                    axios.get('http://localhost:3000/api/users/suggestions', getAuthHeaders()),
-                    axios.get(`http://localhost:3000/api/friends/${loggedInUserId}/sent`, getAuthHeaders())
+                    axios.get('http://localhost:3000/api/users/suggestions', authHeaders()),
+                    axios.get(`http://localhost:3000/api/friends/${loggedInUserId}/sent`, authHeaders())
                 ]);
 
                 setSuggestions(Array.isArray(suggestionsResponse.data) ? suggestionsResponse.data : []);
@@ -50,8 +40,6 @@ export default function HomePage() {
                 console.error('Erro ao carregar dados da sidebar:', err);
                 setSuggestions([]);
                 setSentRequests([]);
-            } finally {
-                setLoadingSuggestions(false);
             }
         };
 
@@ -89,22 +77,22 @@ export default function HomePage() {
             await axios.post(
                 `http://localhost:3000/api/friends/${loggedInUserId}/add/${friendId}`,
                 {},
-                getAuthHeaders()
+                authHeaders()
             );
 
             
             setSentRequests((prev) => [...prev, { FriendID: friendId }]);
 
         } catch (err) {
-            console.error('Erro ao enviar pedido de amizade:', err);
+            console.error('Error sending friend request:', err);
         }
     };
 
     return (
-        <div className="min-vh-100 bg-light">
+        <div className="d-flex flex-column min-vh-100 bg-light">
             <Navbar onNewPostClick={() => setShowCreateModal(true)} />
 
-            <div className="container py-4">
+            <main className="flex-grow-1 container py-4">
                 <div className="row g-4">
                     {}
                     <div className="col-12 col-lg-3 d-none d-lg-block">
@@ -118,7 +106,7 @@ export default function HomePage() {
                         <div className="mx-auto" style={{ maxWidth: '100%' }}>
                             {posts.length === 0 ? (
                                 <div className="bg-white p-5 rounded-4 shadow-sm text-center">
-                                    <p className="text-muted mb-0">Ainda não existem posts para mostrar.</p>
+                                    <p className="text-muted mb-0">No posts to show yet.</p>
                                 </div>
                             ) : (
                                 <div className="d-flex flex-column gap-4">
@@ -143,18 +131,18 @@ export default function HomePage() {
                                 suggestions={suggestions}
                                 sentRequests={sentRequests}
                                 onAddFriend={handleSendFriendRequest}
-                                loading={loadingSuggestions}
                             />
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
 
             <CreatePostModal
                 show={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
                 onPostCreated={handlePostCreated}
             />
+            <Footer />
         </div>
     );
 }

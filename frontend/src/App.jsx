@@ -3,6 +3,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import HomePage from "./pages/HomePage.jsx";
+import NotFoundPage from "./pages/NotFoundPage.jsx";
 
 function PrivateRoute({ children }) {
     const token = localStorage.getItem('token');
@@ -34,7 +35,7 @@ function App() {
                     }
                 />
 
-                <Route path="*" element={<Navigate to="/login" replace />} />
+                <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </Router>
     );

@@ -21,12 +21,25 @@ function RegisterPage() {
             return;
         }
 
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+
+        if (age < 18) {
+            setError('You must be at least 18 years old to register.');
+            return;
+        }
+
         try {
             const response = await axios.post('http://localhost:3000/api/auth/register', {
                 FullName: fullName,
                 Email: email,
                 Password: password,
-                Birthdate: birthDate || null
+                Birthdate: birthDate
             });
 
             setSuccess(response.data.message || "User registered successfully");
@@ -121,6 +134,7 @@ function RegisterPage() {
                                     className="form-control form-control-lg rounded-3 border-secondary-subtle"
                                     value={birthDate}
                                     onChange={(e) => setBirthDate(e.target.value)}
+                                    required
                                 />
                             </div>
 

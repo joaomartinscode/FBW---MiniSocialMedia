@@ -1,23 +1,18 @@
 import { Link } from 'react-router-dom';
 import Button from './ui/Button.jsx';
-import { DEFAULT_AVATAR } from '../constants.js';
+import { DEFAULT_AVATAR } from '../lib/constants.js';
 
-export default function SidebarSuggestions({ suggestions = [], sentRequests = [], onAddFriend, loading = false }) {
-    
+export default function SidebarSuggestions({ suggestions = [], sentRequests = [], onAddFriend }) {
+    if (suggestions == null || sentRequests == null) return null;
+
     const sentIds = new Set(sentRequests.map((req) => Number(req.FriendID || req.UserID)));
 
     return (
         <aside className="p-3">
-            <h3 className="fw-bold text-dark fs-6 mb-4 px-1">Sugestões</h3>
+            <h3 className="fw-bold text-dark fs-6 mb-4 px-1">Suggestions</h3>
 
-            {loading ? (
-                <div className="px-1 py-2 text-center">
-                    <div className="spinner-border spinner-border-sm text-primary" role="status">
-                        <span className="visually-hidden">Carregando...</span>
-                    </div>
-                </div>
-            ) : suggestions.length === 0 ? (
-                <p className="text-muted small px-1">Sem sugestões por agora.</p>
+            {suggestions.length === 0 ? (
+                <p className="text-muted small px-1">No suggestions yet.</p>
             ) : (
                 <ul className="list-unstyled d-flex flex-column gap-3">
                     {suggestions.map((user) => {
@@ -38,7 +33,7 @@ export default function SidebarSuggestions({ suggestions = [], sentRequests = []
                                         className="fw-medium text-dark text-truncate text-decoration-none small"
                                         title={user.FullName}
                                     >
-                                        {user.FullName || 'Utilizador'}
+                                        {user.FullName || 'User'}
                                     </Link>
                                 </div>
 
@@ -49,7 +44,7 @@ export default function SidebarSuggestions({ suggestions = [], sentRequests = []
                                     disabled={isSent}
                                     onClick={() => onAddFriend(userId)}
                                 >
-                                    {isSent ? 'Enviado' : 'Adicionar'}
+                                    {isSent ? 'Sent' : 'Add Friend'}
                                 </Button>
                             </li>
                         );

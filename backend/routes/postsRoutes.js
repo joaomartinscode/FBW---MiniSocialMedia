@@ -10,6 +10,8 @@ router.get('/', postsController.findAllPosts);
 
 router.get('/user/:id', postsController.findPostsByUserID);
 
+router.get('/:id', postsController.findPostByID);
+
 router.post('/', postsController.addPost);
 
 router.put('/:id', postsController.editPost);

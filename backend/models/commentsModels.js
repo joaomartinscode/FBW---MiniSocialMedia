@@ -1,8 +1,8 @@
 const { prisma } = require('../lib/prisma');
 
 async function getCommentsByPostId(postId) {
-    
-    
+
+
     return prisma.comments.findMany({
         where: {
             PostID: parseInt(postId),

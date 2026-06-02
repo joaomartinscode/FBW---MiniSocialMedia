@@ -1,13 +1,13 @@
 
 import Button from './ui/Button.jsx';
-import { DEFAULT_AVATAR } from '../constants.js';
+import { DEFAULT_AVATAR } from '../lib/constants.js';
 
 export default function ProfileHeader({ user, isOwnProfile, friendStatus, onEditProfile, onToggleFriend }) {
 
     const getButtonConfig = () => {
         if (isOwnProfile) {
             return {
-                label: 'Editar Perfil',
+                label: 'Edit Profile',
                 icon: 'bi bi-pencil',
                 variant: 'primary',
                 className: 'rounded-pill px-4 text-white'
@@ -17,21 +17,21 @@ export default function ProfileHeader({ user, isOwnProfile, friendStatus, onEdit
         switch (friendStatus) {
             case 'ACCEPTED':
                 return {
-                    label: 'Remover Amizade',
+                    label: 'Remove Friend',
                     icon: 'bi bi-person-x',
                     variant: 'outline',
                     className: 'rounded-pill px-4 border-secondary text-dark'
                 };
             case 'REQUESTED':
                 return {
-                    label: 'Cancelar Pedido',
+                    label: 'Cancel Request',
                     icon: 'bi bi-person-dash',
                     variant: 'outline',
                     className: 'rounded-pill px-4 border-secondary text-dark'
                 };
             case 'PENDING':
                 return {
-                    label: 'Aceitar Pedido',
+                    label: 'Accept Request',
                     icon: 'bi bi-person-check',
                     variant: 'primary',
                     className: 'rounded-pill px-4 text-white'
@@ -39,7 +39,7 @@ export default function ProfileHeader({ user, isOwnProfile, friendStatus, onEdit
             case 'NONE':
             default:
                 return {
-                    label: 'Enviar Pedido de Amizade',
+                    label: 'Send Friend Request',
                     icon: 'bi bi-person-plus',
                     variant: 'primary',
                     className: 'rounded-pill px-4 text-white'
@@ -64,7 +64,7 @@ export default function ProfileHeader({ user, isOwnProfile, friendStatus, onEdit
                     </div>
                     <div className="col pb-3">
                         <h1 className="profile-title mb-0">
-                            {user?.FullName || (user === null ? 'Carregando...' : 'Utilizador não encontrado')}
+                            {user?.FullName || 'User'}
                         </h1>
                     </div>
                     <div className="col-auto pb-3">

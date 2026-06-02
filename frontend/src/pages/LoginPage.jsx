@@ -2,6 +2,8 @@ import {useState} from 'react';
 import {useNavigate} from 'react-router-dom'
 import axios from 'axios';
 import Button from '../components/ui/Button.jsx';
+import LoginIllustration from '../assets/images/IMG.svg';
+import LoginLogo from '../assets/images/LOGO.svg';
 
 function LoginPage(){
     const [email, setEmail] = useState('');
@@ -33,12 +35,17 @@ function LoginPage(){
                 localStorage.setItem('userId', userId);
             }
 
+            const fullName = response.data.fullName || response.data.user?.FullName;
+            if (fullName) {
+                localStorage.setItem('userFullName', fullName);
+            }
+
             setSuccess(response.data.message || "Successful login");
             setEmail('');
             setPassword('');
 
             setTimeout(() => {
-                navigate(`/profile/${userId}`);
+                navigate(`/`);
             }, 1500);
 
         } catch (err) {
@@ -55,8 +62,8 @@ function LoginPage(){
                     </h2>
                     <figure className="w-100 text-center m-0" style={{ maxWidth: '480px' }}>
                         <img
-                            src="/src/assets/images/IMG.svg"
-                            alt="Decorative ilustration of users taking a photo"
+                            src={LoginIllustration}
+                            alt="Decorative illustration of users taking a photo"
                             className="img-fluid"
                             style={{ maxHeight: '420px' }}
                         />
@@ -66,7 +73,7 @@ function LoginPage(){
                     <article className="w-100" style={{ maxWidth: '400px' }}>
                         <header className="text-center mb-4">
                             <img
-                                src="/src/assets/images/LOGO.svg"
+                                src={LoginLogo}
                                 alt="Logo Facebook da Wish"
                                 className="mb-2 rounded-3"
                                 style={{ width: '90px' }}

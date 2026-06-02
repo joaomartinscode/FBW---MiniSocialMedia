@@ -1,4 +1,5 @@
 const userModel = require('../models/usersModels');
+const friendModel = require('../models/friendsModels');
 const bcrypt = require('bcrypt');
 
 const isValidId = (id) => Number.isInteger(id) && id >= 1;
@@ -22,12 +23,13 @@ async function getSuggestions(req, res) {
         return res.status(200).json(suggestions);
     } catch (error) {
         console.error('getSuggestions error: ', error);
-        return res.status(500).json({ message: 'Erro ao buscar sugestões' });
+        return res.status(500).json({ message: 'Error fetching suggestions' });
     }
 }
 async function findUserByID(req, res) {
     try {
         const id = Number(req.params.id);
+        const loggedInUserId = req.user.userId;
 
         if (!isValidId(id)) {
             return res.status(400).json({ message: 'Invalid user ID' });
@@ -39,6 +41,17 @@ async function findUserByID(req, res) {
             return res.status(404).json({
                 message: 'User not found'
             });
+        }
+
+        if (id !== loggedInUserId && !user.IsPublicProfile) {
+            const friendStatus = await friendModel.getFriendStatus(loggedInUserId, id);
+            if (friendStatus !== 'ACCEPTED') {
+                return res.status(200).json({
+                    UserID: user.UserID,
+                    FullName: user.FullName,
+                    isPrivateAndNotFriend: true
+                });
+            }
         }
 
         return res.status(200).json(user);
@@ -55,9 +68,9 @@ async function addUser(req, res) {
         const { FullName, Email, Password, Birthdate } = req.body;
 
         if (!FullName || !Email || !Password) {
-            return res.status(400).json({
-                message: 'Missing required fields'
-            });
+                return res.status(500).json({
+                    message: 'Error fetching suggestions'
+                });
         }
 
         const saltRounds = 10;
@@ -90,7 +103,7 @@ async function removeUser(req, res) {
 
         const affectedRows = userModel.removeUser(id);
 
-        if (affectedRows !== 1) {
+        if (affectedRows < 1) {
             return res.status(404).json({
                 message: 'User not found'
             });
@@ -121,19 +134,32 @@ async function editUser(req, res) {
         }
 
         const { FullName, Birthdate, Email, Password, IsPublicProfile } = req.body;
-        if (!FullName || !Email) {
-            return res.status(400).json({
-                message: 'Missing arguments'
-            });
+
+        if (Object.keys(req.body).length === 0) {
+            return res.status(400).json({ message: 'No fields to update' });
         }
 
-        let passwordFinal = Password;
+        if (Birthdate) {
+            const birthDateObj = new Date(Birthdate);
+            const today = new Date();
+            let age = today.getFullYear() - birthDateObj.getFullYear();
+            const m = today.getMonth() - birthDateObj.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
+                age--;
+            }
+
+            if (age < 18) {
+                return res.status(400).json({ message: 'You must be at least 18 years old.' });
+            }
+        }
+
+        let passwordFinal;
         if (Password) {
             const saltRounds = 10;
             passwordFinal = await bcrypt.hash(Password, saltRounds);
         }
 
-        const affectedRows = userModel.editUser(id, FullName, Birthdate, Email, passwordFinal, IsPublicProfile);
+        const affectedRows = await userModel.editUser(id, FullName, Birthdate, Email, passwordFinal, IsPublicProfile);
 
         if (affectedRows === 0) {
             return res.status(404).json({ message: 'User not found or no changes made' });
