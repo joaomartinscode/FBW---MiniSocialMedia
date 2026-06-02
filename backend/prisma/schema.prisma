@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model comments {
   CommentID       Int        @id @default(autoincrement())
   UserID          Int
@@ -38,7 +37,6 @@ model friends {
   @@index([FriendID], map: "FriendID")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model likes {
   LikeID    Int       @id @default(autoincrement())
   UserID    Int

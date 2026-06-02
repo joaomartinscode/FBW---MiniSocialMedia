@@ -80,14 +80,37 @@ async function addPost(UserID, Content, IsPublic) {
 
 async function removePost(postId, userId) {
     try {
-        const result = await prisma.posts.deleteMany({
-            where: {
-                PostID: parseInt(postId),
-                UserID: parseInt(userId)
-            }
+        const result = await prisma.$transaction(async (prisma) => {
+            // First, remove the parent-child constraint for all comments of this post
+            // by setting ParentCommentID to null. This breaks the hierarchy so we
+            // can safely delete them all at once without hitting foreign key errors.
+            await prisma.comments.updateMany({
+                where: {
+                    PostID: parseInt(postId)
+                },
+                data: {
+                    ParentCommentID: null
+                }
+            });
+
+            // Now delete all comments associated with the post
+            await prisma.comments.deleteMany({
+                where: {
+                    PostID: parseInt(postId)
+                }
+            });
+
+            // Finally, delete the post itself
+            return prisma.posts.deleteMany({
+                where: {
+                    PostID: parseInt(postId),
+                    UserID: parseInt(userId)
+                }
+            });
         });
         return result.count;
     } catch (error) {
+        console.error('Error in removePost model:', error);
         return 0;
     }
 }
