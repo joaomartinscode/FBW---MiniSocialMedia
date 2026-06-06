@@ -1,21 +1,8 @@
 const { prisma } = require('../lib/prisma');
 
-/**
- * Determines the friendship status from the perspective of a given user (userId) towards another user (targetId).
- * - REQUESTED: userId has sent a request to targetId.
- * - PENDING: targetId has sent a request to userId (so userId has a pending request to accept).
- * - ACCEPTED: The friendship is accepted.
- * - NONE: No relationship exists.
- */
 async function getFriendStatus(userId, targetId) {
-    // Find the relationship record that represents the state from userId's perspective.
-    // The database stores two records for each friendship request:
-    // 1. (sender -> receiver) with status 'REQUESTED'
-    // 2. (receiver -> sender) with status 'PENDING'
     const relation = await prisma.friends.findUnique({
         where: {
-            // This uses the composite key defined in `schema.prisma` as @@id([UserID, FriendID])
-            // Prisma's client generates the name `UserID_FriendID` for this key.
             UserID_FriendID: {
                 UserID: parseInt(userId),
                 FriendID: parseInt(targetId),
@@ -26,8 +13,6 @@ async function getFriendStatus(userId, targetId) {
         }
     });
 
-    // If a record is found, its status is the status from userId's perspective.
-    // If not found, there is no relationship from this perspective, so the status is 'NONE'.
     return relation ? relation.Status : 'NONE';
 }
 
