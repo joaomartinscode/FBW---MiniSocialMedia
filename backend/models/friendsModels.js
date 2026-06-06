@@ -1,19 +1,33 @@
 const { prisma } = require('../lib/prisma');
 
+/**
+ * Determines the friendship status from the perspective of a given user (userId) towards another user (targetId).
+ * - REQUESTED: userId has sent a request to targetId.
+ * - PENDING: targetId has sent a request to userId (so userId has a pending request to accept).
+ * - ACCEPTED: The friendship is accepted.
+ * - NONE: No relationship exists.
+ */
 async function getFriendStatus(userId, targetId) {
-    const relation = await prisma.friends.findFirst({
+    // Find the relationship record that represents the state from userId's perspective.
+    // The database stores two records for each friendship request:
+    // 1. (sender -> receiver) with status 'REQUESTED'
+    // 2. (receiver -> sender) with status 'PENDING'
+    const relation = await prisma.friends.findUnique({
         where: {
-            OR: [
-                { UserID: parseInt(userId), FriendID: parseInt(targetId) },
-                { UserID: parseInt(targetId), FriendID: parseInt(userId) }
-            ]
+            // This uses the composite key defined in `schema.prisma` as @@id([UserID, FriendID])
+            // Prisma's client generates the name `UserID_FriendID` for this key.
+            UserID_FriendID: {
+                UserID: parseInt(userId),
+                FriendID: parseInt(targetId),
+            },
         },
         select: {
-            Status: true,
-            UserID: true
+            Status: true
         }
     });
 
+    // If a record is found, its status is the status from userId's perspective.
+    // If not found, there is no relationship from this perspective, so the status is 'NONE'.
     return relation ? relation.Status : 'NONE';
 }
 
@@ -90,12 +104,22 @@ async function findSentRequestsByUserID(userId) {
 }
 
 async function addFriend(userIDSender, userIDReceiver) {
-    const status = await getFriendStatus(userIDSender, userIDReceiver);
+    // Check if a relationship already exists in either direction to prevent duplicates
+    const existingRelation = await prisma.friends.findFirst({
+        where: {
+            OR: [
+                { UserID: parseInt(userIDSender), FriendID: parseInt(userIDReceiver) },
+                { UserID: parseInt(userIDReceiver), FriendID: parseInt(userIDSender) }
+            ]
+        }
+    });
 
-    if (status !== 'NONE') {
+    if (existingRelation) {
+        // If a relation already exists, we shouldn't create a new one.
         throw new Error("Relation already exists");
     }
 
+    // Create two records to represent the relationship from both users' perspectives
     await prisma.friends.createMany({
         data: [
             { UserID: parseInt(userIDSender), FriendID: parseInt(userIDReceiver), Status: 'REQUESTED' },
@@ -105,6 +129,7 @@ async function addFriend(userIDSender, userIDReceiver) {
 }
 
 async function removeFriend(userId1, userId2) {
+    // Removes the relationship records in both directions
     const result = await prisma.friends.deleteMany({
         where: {
             OR: [
@@ -118,6 +143,7 @@ async function removeFriend(userId1, userId2) {
 }
 
 async function acceptFriend(userId, friendId) {
+    // Updates the status to 'ACCEPTED' for the relationship in both directions
     const result = await prisma.friends.updateMany({
         where: {
             OR: [
@@ -144,7 +170,6 @@ async function findAllFriendIds(userId) {
         }
     });
 
-    console.log(`[DEBUG] Friends IDs for user ${userId}:`, friends.map(f => f.FriendID));
     return friends.map(f => f.FriendID);
 }
 
