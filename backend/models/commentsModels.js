@@ -1,8 +1,6 @@
 const { prisma } = require('../lib/prisma');
 
 async function getCommentsByPostId(postId) {
-
-
     return prisma.comments.findMany({
         where: {
             PostID: parseInt(postId),
@@ -39,11 +37,9 @@ async function addComment(userId, postId, parentCommentId, content) {
     let finalParentId = null;
 
     if (parentCommentId) {
-        
         finalParentId = parseInt(parentCommentId);
         finalPostId = null;
     } else if (postId) {
-        
         finalPostId = parseInt(postId);
         finalParentId = null;
     }

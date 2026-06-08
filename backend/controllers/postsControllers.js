@@ -89,14 +89,13 @@ async function findPostByID(req, res) {
 async function addPost(req, res) {
     try {
         let { Content, IsPublic = 1 } = req.body;
-
         const UserID = req.user.userId;
 
         if (!Content) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        const post = await postsModel.addPost(UserID, Content, IsPublic);
+        const post = await postsModel.addPost(UserID, Content, IsPublic, UserID);
         return res.status(201).json(post);
 
     } catch (error) {

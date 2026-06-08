@@ -52,7 +52,7 @@ export default function HomePage() {
         if (!newPost || !newPost.PostID) return;
 
         setPosts((prev) => {
-            const alreadyExists = prev.some((p) => Number(p.PostID) === Number(newPost.PostID));
+            const alreadyExists = prev.some( (p) => Number(p.PostID) === Number(newPost.PostID));
             if (alreadyExists) return prev;
             return [newPost, ...prev];
         });

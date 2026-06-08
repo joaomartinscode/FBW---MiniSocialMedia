@@ -35,7 +35,8 @@ export default function CreatePostModal({ show, onClose, onPostCreated }) {
         try {
             const payload = {
                 Content: content.trim(),
-                IsPublic: Number(isPublic)
+                IsPublic: Number(isPublic),
+                TargetUserID: userId
             };
 
             const response = await axios.post('http://localhost:3000/api/posts', payload, {

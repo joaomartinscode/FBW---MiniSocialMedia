@@ -89,7 +89,6 @@ async function findSentRequestsByUserID(userId) {
 }
 
 async function addFriend(userIDSender, userIDReceiver) {
-    // Check if a relationship already exists in either direction to prevent duplicates
     const existingRelation = await prisma.friends.findFirst({
         where: {
             OR: [
@@ -100,11 +99,9 @@ async function addFriend(userIDSender, userIDReceiver) {
     });
 
     if (existingRelation) {
-        // If a relation already exists, we shouldn't create a new one.
         throw new Error("Relation already exists");
     }
 
-    // Create two records to represent the relationship from both users' perspectives
     await prisma.friends.createMany({
         data: [
             { UserID: parseInt(userIDSender), FriendID: parseInt(userIDReceiver), Status: 'REQUESTED' },
@@ -114,7 +111,6 @@ async function addFriend(userIDSender, userIDReceiver) {
 }
 
 async function removeFriend(userId1, userId2) {
-    // Removes the relationship records in both directions
     const result = await prisma.friends.deleteMany({
         where: {
             OR: [
@@ -128,7 +124,6 @@ async function removeFriend(userId1, userId2) {
 }
 
 async function acceptFriend(userId, friendId) {
-    // Updates the status to 'ACCEPTED' for the relationship in both directions
     const result = await prisma.friends.updateMany({
         where: {
             OR: [

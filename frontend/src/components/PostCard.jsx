@@ -1,4 +1,4 @@
-    import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
     import axios from 'axios';
     import Button from './ui/Button.jsx';
     import CommentSection from './CommentSection.jsx';
@@ -98,7 +98,9 @@
                             style={{ width: '40px', height: '40px', objectFit: 'cover' }}
                         />
                         <div>
-                            <span className="fw-semibold d-block">{authorName}</span>
+                            <span className="fw-semibold d-block">
+                                {authorName}
+                            </span>
                             <small className="text-muted" style={{ fontSize: '0.75rem' }}>
                                 Posted {post.CreatedAt ? new Date(post.CreatedAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                             </small>
@@ -138,7 +140,6 @@
                     )}
                 </div>
 
-                {}
                 <div className="mb-3">
                     <img
                         src={randomImage}

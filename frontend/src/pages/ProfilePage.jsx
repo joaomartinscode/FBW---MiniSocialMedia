@@ -96,7 +96,9 @@ export default function ProfilePage() {
 
     const handlePostCreated = (newPost) => {
         if (!newPost || !newPost.PostID) return;
-        setPosts((prev) => [newPost, ...prev]);
+        if (isOwnProfile) {
+            setPosts((prev) => [newPost, ...prev]);
+        }
     };
 
     const handlePostDeleted = (deletedPostId) => {
@@ -165,22 +167,19 @@ export default function ProfilePage() {
                 </div>
             </main>
 
-            {isOwnProfile && (
-                <>
-                    <CreatePostModal
-                        show={showCreateModal}
-                        onClose={() => setShowCreateModal(false)}
-                        onPostCreated={handlePostCreated}
-                    />
-                    {showEditProfileModal && (
-                        <EditProfileModal
-                            show={showEditProfileModal}
-                            onClose={() => setShowEditProfileModal(false)}
-                            user={user}
-                            onProfileUpdated={handleProfileUpdated}
-                        />
-                    )}
-                </>
+            <CreatePostModal
+                show={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onPostCreated={handlePostCreated}
+            />
+
+            {isOwnProfile && showEditProfileModal && (
+                <EditProfileModal
+                    show={showEditProfileModal}
+                    onClose={() => setShowEditProfileModal(false)}
+                    user={user}
+                    onProfileUpdated={handleProfileUpdated}
+                />
             )}
             <Footer />
         </div>
