@@ -58,12 +58,6 @@ const loginUser = async (req, res) => {
             return res.status(404).json({ message: 'Email or password you entered is incorrect.' });
         }
 
-        if (Password.length < 8 || Password.length > 20) {
-            return res.status(400).json({
-                error: 'Password must be between 8 and 20 characters'
-            });
-        }
-
         const isPasswordValid = await bcrypt.compare(Password, existingUser.Password);
 
         if (!isPasswordValid) {

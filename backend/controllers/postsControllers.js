@@ -37,14 +37,21 @@ async function findPostsByUserID(req, res) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        if (id !== loggedInUserId && !user.IsPublicProfile) {
+        let isFriend = false;
+        if (id !== loggedInUserId) {
             const friendStatus = await friendsModel.getFriendStatus(loggedInUserId, id);
-            if (friendStatus !== 'ACCEPTED') {
-                return res.status(200).json([]);
+            if (friendStatus === 'ACCEPTED') {
+                isFriend = true;
             }
+        } else {
+            isFriend = true;
         }
 
-        const posts = await postsModel.findPostsByUserId(id);
+        if (!isFriend && !user.IsPublicProfile) {
+            return res.status(200).json([]);
+        }
+
+        const posts = await postsModel.findPostsByUserId(id, isFriend);
 
         if (posts.length === 0) {
             return res.status(200).json([]);

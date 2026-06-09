@@ -94,14 +94,12 @@ export default function HomePage() {
 
             <main className="flex-grow-1 container py-4">
                 <div className="row g-4">
-                    {}
                     <div className="col-12 col-lg-3 d-none d-lg-block">
                         <div className="bg-white rounded-4 shadow-sm position-sticky" style={{ top: '80px' }}>
                             <SidebarFriends currentUserId={loggedInUserId} />
                         </div>
                     </div>
 
-                    {}
                     <div className="col-12 col-lg-6">
                         <div className="mx-auto" style={{ maxWidth: '100%' }}>
                             {posts.length === 0 ? (
@@ -124,7 +122,6 @@ export default function HomePage() {
                         </div>
                     </div>
 
-                    {}
                     <div className="col-12 col-lg-3">
                         <div className="bg-white rounded-4 shadow-sm position-sticky" style={{ top: '80px' }}>
                             <SidebarSuggestions

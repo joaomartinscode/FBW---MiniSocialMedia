@@ -27,7 +27,7 @@ async function getCommentsByPostId(postId) {
             }
         },
         orderBy: {
-            CreatedAt: 'asc'
+            CreatedAt: 'desc'
         }
     });
 }

@@ -29,11 +29,20 @@ function findAllPosts(userId, friendIds) {
     });
 }
 
-async function findPostsByUserId(id) {
+async function findPostsByUserId(id, isFriend = false) {
+    let whereCondition = {
+        UserID: parseInt(id)
+    };
+
+    if (!isFriend) {
+        whereCondition.OR = [
+            { IsPublic: true },
+            { IsPublic: { equals: null } }
+        ];
+    }
+
     return prisma.posts.findMany({
-        where: {
-            UserID: parseInt(id)
-        },
+        where: whereCondition,
         include: {
             users: {
                 select: {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import {useNavigate} from 'react-router-dom'
 import axios from 'axios';
 import Button from '../components/ui/Button.jsx';
 
@@ -10,6 +11,8 @@ function RegisterPage() {
 
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    const navigate = useNavigate();
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -47,6 +50,10 @@ function RegisterPage() {
             setEmail('');
             setPassword('');
             setBirthDate('');
+
+            setTimeout(() => {
+                navigate(`/`);
+            }, 1500);
         } catch (err) {
             setError(err.response?.data?.message || 'Error registering user');
         }
@@ -58,7 +65,6 @@ function RegisterPage() {
         <main className="container-fluid vh-100 p-0 overflow-hidden">
             <div className="row h-100 g-0">
 
-                {}
                 <section className="col-10 col-md-6 d-flex flex-column justify-content-center align-items-center position-relative bg-white px-4 mx-auto">
 
                     <Button
@@ -151,7 +157,6 @@ function RegisterPage() {
                     </article>
                 </section>
 
-                {}
                 <section className="col-md-6 d-none d-md-flex flex-column justify-content-center align-items-center text-white p-5 bg-dark-panel" aria-hidden="true">
                     <h2 className="display-4 mb-5 text-center">
                         FACEBOOK DA WISH

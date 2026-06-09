@@ -29,7 +29,6 @@ export default function Button({
     const content = (
         <>
             {icon && <i className={icon} aria-hidden="true"></i>}
-            {}
             {children && <span className={icon ? "ms-2" : ""}>{children}</span>}
         </>
     );
