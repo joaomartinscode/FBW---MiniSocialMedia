@@ -29,7 +29,7 @@ function findAllPosts(userId, friendIds) {
     });
 }
 
-async function findPostsByUserId(id, isFriend = false) {
+function findPostsByUserId(id, isFriend = false) {
     let whereCondition = {
         UserID: parseInt(id)
     };
@@ -56,7 +56,7 @@ async function findPostsByUserId(id, isFriend = false) {
     });
 }
 
-async function findPostsById(id) {
+function findPostsById(id) {
     return prisma.posts.findUnique({
         where: {
             PostID: parseInt(id)
@@ -71,7 +71,7 @@ async function findPostsById(id) {
     });
 }
 
-async function addPost(UserID, Content, IsPublic) {
+function addPost(UserID, Content, IsPublic) {
     return prisma.posts.create({
         data: {
             UserID: parseInt(UserID),

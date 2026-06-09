@@ -13,7 +13,7 @@ async function findAllUsers() {
 }
 
 async function findSuggestions(userId) {
-    
+
     const friends = await prisma.friends.findMany({
         where: {
             OR: [
@@ -64,7 +64,7 @@ async function findUserByEmail(email) {
     })) || null;
 }
 
-async function addUser(FullName, Email, Password, Birthdate) {
+function addUser(FullName, Email, Password, Birthdate) {
     return prisma.users.create({
         data: {
             FullName: FullName,

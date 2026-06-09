@@ -30,12 +30,18 @@ export default function Button({
         <>
             {icon && <i className={icon} aria-hidden="true"></i>}
             {children && <span className={icon ? "ms-2" : ""}>{children}</span>}
+
+
         </>
     );
 
     if (to) {
         return (
-            <Link to={to} className={combinedClasses} {...props}>
+            <Link
+                to={to}
+                className={combinedClasses}
+                {...props}
+            >
                 {content}
             </Link>
         );
